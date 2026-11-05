@@ -2,6 +2,7 @@
 #include "ItemInventoryFramework/UInventoryData.h"
 #include "ItemInventoryFramework/UContainerInventoryComponent.h"
 #include "ItemInventoryFramework/UContainerViewComponent.h"
+#include "ItemInventoryFramework/UBFL_InventorySave.h"
 #include "ItemInventoryFramework/InventoryLog.h"
 #include "Engine/Engine.h"
 #include "Engine/World.h"
