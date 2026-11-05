@@ -6,6 +6,7 @@
 #include "ItemInventoryFramework/UPlayerInventoryComponent.h"
 #include "ItemInventoryFramework/UItemInventorySettings.h"
 #include "ItemInventoryFramework/UHotbarComponent.h"
+#include "ItemInventoryFramework/UHeldItemComponent.h"
 #include "ItemInventoryFramework/UBFL_InventoryConsume.h"
 #include "ItemInventoryFramework/InventoryServices.h"
 #include "ItemInventoryFramework/InventoryLog.h"
@@ -442,9 +443,6 @@ FS_InventoryResult UBFL_Inventory::tryPickupLoose(APlayerState* player, ALooseIt
     return added;
 }
 
-
-#include "ItemInventoryFramework/UHeldItemComponent.h"
-#include "ItemInventoryFramework/UHotbarComponent.h"
 
 FS_HeldItemView UBFL_Inventory::getHeldItem(const APlayerState* player){
     const UHeldItemComponent* held = UHeldItemComponent::findFor(player != nullptr ? player->GetPawn() : nullptr);
