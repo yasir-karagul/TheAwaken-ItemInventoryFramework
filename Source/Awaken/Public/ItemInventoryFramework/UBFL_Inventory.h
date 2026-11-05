@@ -43,4 +43,19 @@ public:
 
 private:
     static void spawnLoose(UObject* worldContext, const FS_InventoryEntry& entry, const FVector& location);
+
+    // ---------- Section 6 ----------
+    // Query. Never empty: Unarmed when nothing is wielded (R01 §3.5, §3.10).
+    static FS_HeldItemView getHeldItem(const APlayerState* player);
+    // Query. The definition behind getHeldItem; never null while the catalog is loaded.
+    static const UDA_ItemDefinition* getHeldDefinition(const APlayerState* player);
+    // Query. For R02: "an equipped weapon cannot be staged" (R02 §3.10).
+    static bool isInstanceHeld(const APlayerState* player, const FGuid& instanceId);
+```
+
+```cpp
+#include "ItemInventoryFramework/UHeldItemComponent.h"
+#include "ItemInventoryFramework/UHotbarComponent.h"
+
+FS_HeldItemView UBFL_Inventory::getHeldItem(const APlayerState* player){
 };
