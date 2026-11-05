@@ -1,5 +1,6 @@
 #include "ItemInventoryFramework/UPlayerInventoryComponent.h"
 #include "ItemInventoryFramework/UInventoryData.h"
+#include "ItemInventoryFramework/UInventoryRegistrySubsystem.h"
 #include "ItemInventoryFramework/InventoryLog.h"
 #include "GameFramework/PlayerState.h"
 #include "Net/UnrealNetwork.h"
@@ -35,8 +36,13 @@ void UPlayerInventoryComponent::createPersonalInventory(){
     }
     personalInventory = NewObject<UInventoryData>(this);
     personalInventory->initialize(FGuid::NewGuid(), E_InventoryType::Personal);
+    UInventoryRegistrySubsystem* registry = UInventoryRegistrySubsystem::get(this);
+    if(registry != nullptr){
+        registry->registerInventory(personalInventory);
+    }
     AddReplicatedSubObject(personalInventory, COND_OwnerOnly);
     INVENTORY_LOG(Log, this, "Personal inventory %s created for %s", *personalInventory->getInventoryId().ToString(), *GetOwner()->GetName());
+    bindPersonalInventory();
 }
 
 void UPlayerInventoryComponent::OnRep_personalInventory(){
