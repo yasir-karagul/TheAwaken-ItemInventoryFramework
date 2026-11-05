@@ -132,7 +132,8 @@ FS_InventoryResult UBFL_Inventory::transferEntry(UInventoryData* source, UInvent
     if(source == destination || quantity <= 0){
         return makeRefusal(T_Inventory_FailReason_InvalidQuantity);
     }
-    // S8.4 adds here: evaluate spoilage on source and destination before reading them.
+    UBFL_InventoryConsume::evaluateAllSpoilage(source);
+    UBFL_InventoryConsume::evaluateAllSpoilage(destination);
 
     const FS_InventoryEntry* found = instanceId.IsValid() ? source->findInstance(instanceId) : source->findStackable(itemId);
     if(found == nullptr){
@@ -264,7 +265,24 @@ FS_GrantResult UBFL_Inventory::grantOrDrop(APlayerState* player, const FS_ItemSt
             }
         }
     }
-    // else: Bagless. Section 6 (S6.8) puts one unit in a free hold slot before dropping.
+    else{
+        // Bagless: one unit into a free hold slot first (R01 §3.7, §3.8), the rest drops below.
+        UHotbarComponent* hotbar = UHotbarComponent::findFor(player);
+        if(hotbar != nullptr && remaining > 0){
+            FS_InventoryEntry single;
+            if(definition->itemKind == E_ItemKind::Instanced){
+                single = makeFreshInstance(player, *definition);
+            }else{
+                single.itemId = stack.itemId;
+                single.totalQuantity = 1;
+                single.spoilAtTime = computeSpoilAt(player, *definition);
+            }
+            if(hotbar->tryAddToHoldSlot(single) != INDEX_NONE){
+                remaining--;
+                result.quantityStored++;
+            }
+        }
+    }
 
     // Step 2: drop the rest as loose items. An item is never destroyed (Doc02 §19.5).
     if(remaining > 0){
@@ -297,6 +315,12 @@ FS_GrantResult UBFL_Inventory::grantOrDrop(APlayerState* player, const FS_ItemSt
         message.itemId = stack.itemId;
         message.quantity = result.quantityDropped;
         UGameplayMessageSubsystem::Get(player).BroadcastMessage(T_Inventory_GrantDropped, message);
+    // inside "if(result.quantityDropped > 0){" after the BroadcastMessage call:
+    UInventoryRequestComponent* requests = UInventoryRequestComponent::findFor(player);
+    const APlayerController* controller = Cast<APlayerController>(player->GetOwner());
+    if(requests != nullptr && controller != nullptr && !controller->IsLocalController()){
+        requests->clientGrantDropped(stack.itemId, result.quantityDropped);
+    }
         INVENTORY_LOG(Log, player, "grantOrDrop %s x%d: stored %d, carried %d, dropped %d", *stack.itemId.ToString(), stack.quantity, result.quantityStored, result.quantityCarried, result.quantityDropped);
         // B21 hook: raise Cosmetic.Event.Interaction.ItemDropped here when the cosmetic channel exists.
     }
@@ -376,8 +400,18 @@ FS_InventoryResult UBFL_Inventory::tryPickupLoose(APlayerState* player, ALooseIt
     }
 
     if(!component->hasBag()){
-        // Section 6 (S6.8) adds the hold-slot path. Until then a Bagless pickup is refused.
-        return makeRefusal(T_Interaction_FailReason_BagFull);
+        UHotbarComponent* hotbar = UHotbarComponent::findFor(player);
+        FS_InventoryEntry single = entry;
+        single.ReplicationID = INDEX_NONE;
+        single.totalQuantity = 1;
+        if(hotbar == nullptr || hotbar->tryAddToHoldSlot(single) == INDEX_NONE){
+            // All three hold slots full: a short reason from the existing refusal-line pattern (Index A110 S2-F14).
+            return makeRefusal(T_Interaction_FailReason_BagFull);
+        }
+        loose->consumeUnits(1);
+        FS_InventoryResult taken;
+        taken.quantity = 1;
+        return taken;
     }
 
     UInventoryData* bag = component->getPersonalInventory();
