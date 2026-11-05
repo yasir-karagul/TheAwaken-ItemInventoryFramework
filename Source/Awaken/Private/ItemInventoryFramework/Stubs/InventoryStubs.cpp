@@ -113,3 +113,23 @@ void UStubBagActorService::removeBagsOwnedBy_Implementation(FGuid characterId){
         bagContents.Remove(bagId);
     }
 }
+
+
+#include "ItemInventoryFramework/ALooseItemActor.h"
+#include "Engine/Engine.h"
+#include "Engine/World.h"
+
+AActor* UStubLooseItemSpawner::spawnLooseItem_Implementation(UObject* worldContext, const FS_InventoryEntry& entry, FVector location){
+    UWorld* world = GEngine != nullptr ? GEngine->GetWorldFromContextObject(worldContext, EGetWorldErrorMode::ReturnNull) : nullptr;
+    if(world == nullptr){
+        return nullptr;
+    }
+    const FTransform transform(FRotator::ZeroRotator, location);
+    ALooseItemActor* actor = world->SpawnActorDeferred<ALooseItemActor>(ALooseItemActor::StaticClass(), transform, nullptr, nullptr, ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn);
+    if(actor == nullptr){
+        return nullptr;
+    }
+    actor->initializeFromEntry(entry);
+    actor->FinishSpawning(transform);
+    return actor;
+}
