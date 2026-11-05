@@ -11,7 +11,6 @@ class UInventoryData;
 class UItemCatalogSubsystem;
 class UInventoryServices;
 class UDA_ItemDefinition;
-class AInventoryTestPlayerState;
 
 // Builds a standalone game instance + world so subsystems exist. Best effort: if your engine build needs
 // a different bootstrap (for example a PIE world), change only this file.
@@ -27,7 +26,7 @@ struct FInventoryTestFixture{
 
     UDA_ItemDefinition* addStackable(FName itemId, int32 limit);
     UDA_ItemDefinition* addInstanced(FName itemId, int32 limit, float durability);
-    AInventoryTestPlayerState* makePlayer();
+    class AInventoryTestPlayerState* makePlayer();
     UDA_ItemDefinition* addSpoilable(FName itemId, FName spoiledItemId, float spoilHours);
     UInventoryData* makeInventory(E_InventoryType type = E_InventoryType::Personal);
 };
