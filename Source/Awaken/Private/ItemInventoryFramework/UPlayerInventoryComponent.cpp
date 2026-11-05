@@ -42,3 +42,58 @@ void UPlayerInventoryComponent::createPersonalInventory(){
 void UPlayerInventoryComponent::OnRep_personalInventory(){
     INVENTORY_LOG(Verbose, this, "Personal inventory replicated");
 }
+
+
+void UPlayerInventoryComponent::setCharacterId(const FGuid& newCharacterId){
+    characterId = newCharacterId;
+}
+
+FGuid UPlayerInventoryComponent::getCharacterId() const{
+    return characterId;
+}
+
+bool UPlayerInventoryComponent::isStartingKitGranted() const{
+    return startingKitGranted;
+}
+
+void UPlayerInventoryComponent::markStartingKitGranted(){
+    startingKitGranted = true;
+}
+
+UInventoryData* UPlayerInventoryComponent::detachPersonalInventory(UObject* newOuter){
+    UInventoryData* handedOut = personalInventory;
+    if(handedOut == nullptr || GetOwner() == nullptr || !GetOwner()->HasAuthority()){
+        return nullptr;
+    }
+    handedOut->onInventoryChanged.RemoveDynamic(this, &UPlayerInventoryComponent::handlePersonalInventoryChanged);
+    RemoveReplicatedSubObject(handedOut);
+    personalInventory = nullptr;
+    handedOut->Rename(nullptr, newOuter, REN_DontCreateRedirectors | REN_NonTransactional | REN_DoNotDirty);
+    revalidateHeldItem();
+    return handedOut;
+}
+
+void UPlayerInventoryComponent::attachPersonalInventory(UInventoryData* inventory){
+    if(inventory == nullptr || personalInventory != nullptr || GetOwner() == nullptr || !GetOwner()->HasAuthority()){
+        return;
+    }
+    inventory->Rename(nullptr, this, REN_DontCreateRedirectors | REN_NonTransactional | REN_DoNotDirty);
+    personalInventory = inventory;
+    AddReplicatedSubObject(personalInventory, COND_OwnerOnly);
+    bindPersonalInventory();
+}
+
+void UPlayerInventoryComponent::resetForNewCharacter(const FGuid& newCharacterId){
+    if(GetOwner() == nullptr || !GetOwner()->HasAuthority()){
+        return;
+    }
+    releaseAllReservations();
+    UInventoryRegistrySubsystem* registry = UInventoryRegistrySubsystem::get(this);
+    UInventoryData* old = detachPersonalInventory(registry);
+    if(old != nullptr && registry != nullptr){
+        registry->destroyInventory(old->getInventoryId());   // the old character's bag content is gone for good
+    }
+    createPersonalInventory();
+    characterId = newCharacterId;
+    startingKitGranted = false;
+}
