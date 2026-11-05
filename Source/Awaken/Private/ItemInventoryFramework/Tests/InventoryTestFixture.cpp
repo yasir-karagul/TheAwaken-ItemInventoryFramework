@@ -9,6 +9,9 @@
 #include "Engine/GameInstance.h"
 #include "Engine/Engine.h"
 #include "Engine/World.h"
+#include "ItemInventoryFramework/Stubs/AInventoryTestPlayerState.h"
+#include "ItemInventoryFramework/Stubs/InventoryStubs.h"
+#include "ItemInventoryFramework/03Interfaces/BPI_GameClock.h"
 
 FInventoryTestFixture::FInventoryTestFixture(){
     gameInstance = NewObject<UGameInstance>(GEngine);
@@ -57,6 +60,27 @@ UInventoryData* FInventoryTestFixture::makeInventory(E_InventoryType type){
     UInventoryData* inventory = NewObject<UInventoryData>(world);
     inventory->initialize(FGuid::NewGuid(), type);
     return inventory;
+}
+
+
+AInventoryTestPlayerState* FInventoryTestFixture::makePlayer(){
+    // Components only BeginPlay in a world that has begun play. If your bootstrap leaves the world idle, start it here.
+    if(!world->HasBegunPlay()){
+        world->InitializeActorsForPlay(FURL());
+        world->BeginPlay();
+    }
+    return world->SpawnActor<AInventoryTestPlayerState>();
+}
+
+UDA_ItemDefinition* FInventoryTestFixture::addSpoilable(FName itemId, FName spoiledItemId, float spoilHours){
+    UDA_ItemDefinition* fresh = addStackable(itemId, 10);
+    fresh->canSpoil = true;
+    fresh->spoilTime = spoilHours;
+    fresh->spoiledItemId = spoiledItemId;
+    fresh->categoryTag = T_Item_Category_Food;
+    UDA_ItemDefinition* spoiled = addStackable(spoiledItemId, 10);
+    spoiled->categoryTag = T_Item_Category_Food;
+    return fresh;
 }
 
 #endif
