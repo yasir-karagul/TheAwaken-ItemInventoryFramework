@@ -494,3 +494,20 @@ FS_SpoilResult UInventoryData::convertStack(FName fromItemId, FName toItemId){
     notifyChanged();
     return result;
 }
+
+FS_InventoryResult UInventoryData::addInstanceForced(const FS_InventoryEntry& instanceEntry){
+    if(!isServerSide()){
+        return refuse(T_Inventory_FailReason_NotServer);
+    }
+    if(!instanceEntry.instanceId.IsValid() || findInstanceIndex(instanceEntry.instanceId) != INDEX_NONE){
+        return refuse(T_Inventory_FailReason_InvalidQuantity);
+    }
+    FS_InventoryEntry added = instanceEntry;
+    added.ReplicationID = INDEX_NONE;
+    added.totalQuantity = 1;
+    added.reservedQuantity = 0;
+    entries.items.Add(added);
+    entries.MarkItemDirty(entries.items.Last());
+    notifyChanged();
+    return accept(1);
+}
