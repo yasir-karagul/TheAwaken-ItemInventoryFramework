@@ -89,4 +89,10 @@ protected:
     UPROPERTY() int32 containerLimit = 0;
     UPROPERTY() FGameplayTagContainer allowedTags;
     UPROPERTY() bool deathBag = false;
+
+    // Spoilage (Section 8). Server only. Moves the whole stack to another itemId, ignoring that item's limit.
+    FS_SpoilResult convertStack(FName fromItemId, FName toItemId);
+```
+
+
 };
