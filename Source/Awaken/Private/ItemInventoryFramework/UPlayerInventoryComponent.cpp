@@ -97,3 +97,51 @@ void UPlayerInventoryComponent::resetForNewCharacter(const FGuid& newCharacterId
     characterId = newCharacterId;
     startingKitGranted = false;
 }
+
+
+#include "ItemInventoryFramework/UBFL_InventorySave.h"
+#include "ItemInventoryFramework/UHotbarComponent.h"
+
+FName UPlayerInventoryComponent::getSaveKey_Implementation(){
+    return TEXT("Inventory.Character");
+}
+
+E_SaveScope UPlayerInventoryComponent::getSaveScope_Implementation(){
+    return E_SaveScope::Character;
+}
+
+int32 UPlayerInventoryComponent::getSnapshotVersion_Implementation(){
+    return UBFL_InventorySave::currentSnapshotVersion;
+}
+
+TArray<uint8> UPlayerInventoryComponent::getSnapshotForSave_Implementation(){
+    // R13 excludes Bagless players from capture (a Character file never says Bagless), so no bag = no snapshot.
+    if(!hasBag()){
+        return TArray<uint8>();
+    }
+    FS_CharacterInventorySave record;
+    record.version = UBFL_InventorySave::currentSnapshotVersion;
+    record.personal = UBFL_InventorySave::captureBundle(personalInventory, true);   // Character file: time LEFT (D3)
+    const UHotbarComponent* hotbar = UHotbarComponent::findFor(Cast<APlayerState>(GetOwner()));
+    if(hotbar != nullptr){
+        record.hotbar.bindings = hotbar->getBindingsSnapshot();   // bindings only; reservations/held/hold slots/last-used are NOT saved
+    }
+    return UBFL_InventorySave::toBytes(FS_CharacterInventorySave::StaticStruct(), &record);
+}
+
+bool UPlayerInventoryComponent::restoreFromSnapshot_Implementation(const TArray<uint8>& snapshot){
+    FS_CharacterInventorySave record;
+    if(!UBFL_InventorySave::fromBytes(FS_CharacterInventorySave::StaticStruct(), &record, snapshot) || !UBFL_InventorySave::migrateCharacterSave(record)){
+        return false;   // refused; R13 shows the reason and a load failure never overwrites a file
+    }
+    if(!hasBag()){
+        createPersonalInventory();   // B06 decides when a player stays Bagless (P4 exception) and then does not call this
+    }
+    releaseAllReservations();        // after a reload there are none
+    UBFL_InventorySave::applyBundle(personalInventory, record.personal, true);
+    UHotbarComponent* hotbar = UHotbarComponent::findFor(Cast<APlayerState>(GetOwner()));
+    if(hotbar != nullptr){
+        hotbar->restoreBindings(record.hotbar.bindings);
+    }
+    return true;
+}
