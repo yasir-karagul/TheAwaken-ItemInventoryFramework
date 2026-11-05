@@ -151,3 +151,11 @@ bool UPlayerInventoryComponent::restoreFromSnapshot_Implementation(const TArray<
     }
     return true;
 }
+
+
+void UPlayerInventoryComponent::EndPlay(const EEndPlayReason::Type EndPlayReason){
+    if(GetOwner() != nullptr && GetOwner()->HasAuthority()){
+        releaseAllReservations();   // reserves held for a leaving player are released (R01 §3.6)
+    }
+    Super::EndPlay(EndPlayReason);
+}
