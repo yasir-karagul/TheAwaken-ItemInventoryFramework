@@ -459,3 +459,38 @@ FS_InventoryResult UInventoryData::consumeReserved(FName itemId, const FGuid& in
     notifyChanged();
     return accept(quantity);
 }
+
+
+FS_SpoilResult UInventoryData::convertStack(FName fromItemId, FName toItemId){
+    FS_SpoilResult result;
+    if(!isServerSide()){
+        return result;
+    }
+    const int32 fromIndex = findStackableIndex(fromItemId);
+    if(fromIndex == INDEX_NONE){
+        return result;
+    }
+    const int32 quantity = entries.items[fromIndex].totalQuantity;
+    result.releasedReservedQuantity = entries.items[fromIndex].reservedQuantity;
+    result.fromItemId = fromItemId;
+    result.toItemId = toItemId;
+
+    entries.items.RemoveAt(fromIndex);
+    entries.MarkArrayDirty();
+
+    const int32 toIndex = findStackableIndex(toItemId);
+    if(toIndex == INDEX_NONE){
+        FS_InventoryEntry spoiled;
+        spoiled.itemId = toItemId;
+        spoiled.totalQuantity = quantity;
+        spoiled.spoilAtTime = -1;   // the spoiled variant does not spoil (validated in the catalog)
+        entries.items.Add(spoiled);
+        entries.MarkItemDirty(entries.items.Last());
+    }else{
+        entries.items[toIndex].totalQuantity += quantity;
+        entries.MarkItemDirty(entries.items[toIndex]);
+    }
+    result.converted = true;
+    notifyChanged();
+    return result;
+}
