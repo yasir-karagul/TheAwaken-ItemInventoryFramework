@@ -5,6 +5,8 @@
 #include "ItemInventoryFramework/UInventoryRegistrySubsystem.h"
 #include "ItemInventoryFramework/UPlayerInventoryComponent.h"
 #include "ItemInventoryFramework/UItemInventorySettings.h"
+#include "ItemInventoryFramework/UHotbarComponent.h"
+#include "ItemInventoryFramework/UBFL_InventoryConsume.h"
 #include "ItemInventoryFramework/InventoryServices.h"
 #include "ItemInventoryFramework/InventoryLog.h"
 #include "ItemInventoryFramework/ALooseItemActor.h"
