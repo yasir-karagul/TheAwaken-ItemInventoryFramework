@@ -50,4 +50,25 @@ public:
 ```
 
 
+
+public:
+    // Server. CharacterID is a Doc R13 / B05 field (designer-approved); until the PlayerState carries it, it lives here.
+    void setCharacterId(const FGuid& newCharacterId);
+    FGuid getCharacterId() const;
+    bool isStartingKitGranted() const;
+    void markStartingKitGranted();
+
+    // Server. Hands the Personal Inventory object out (bag detach). Returns it; the component keeps nothing.
+    UInventoryData* detachPersonalInventory(UObject* newOuter);
+    // Server. Takes an inventory object back as the Personal Inventory (bag recovery / fresh character).
+    void attachPersonalInventory(UInventoryData* inventory);
+    // Server. Fresh character: new empty bag, new CharacterID, kit not yet granted.
+    void resetForNewCharacter(const FGuid& newCharacterId);
+
+protected:
+    FGuid characterId;               // server only
+    bool startingKitGranted = false; // server only
+```
+
+
 };
