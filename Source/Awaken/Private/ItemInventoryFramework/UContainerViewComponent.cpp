@@ -75,6 +75,7 @@ FS_InventoryResult UContainerViewComponent::openContainerView(const FGuid& conta
     viewedContainerId = containerId;
     source->onInventoryChanged.AddDynamic(this, &UContainerViewComponent::handleSourceChanged);
     registry->addViewer(containerId, this);
+    UBFL_InventoryConsume::evaluateAllSpoilage(source);
     viewMirror->replaceEntries(source->getEntries());
     result.quantity = 1;
     return result;
