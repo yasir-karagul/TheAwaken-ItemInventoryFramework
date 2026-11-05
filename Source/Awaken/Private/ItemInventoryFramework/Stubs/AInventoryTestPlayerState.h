@@ -7,6 +7,7 @@
 #include "AInventoryTestPlayerState.generated.h"
 
 class UPlayerInventoryComponent;
+class UHotbarComponent;
 
 UCLASS()
 class AInventoryTestPlayerState : public APlayerState{
@@ -16,6 +17,7 @@ public:
     AInventoryTestPlayerState();
 
     UPROPERTY(VisibleAnywhere) TObjectPtr<UPlayerInventoryComponent> inventoryComponent;
+    UPROPERTY(VisibleAnywhere) TObjectPtr<UHotbarComponent> hotbarComponent;
     // Section 6 adds: hotbarComponent.
 };
 
