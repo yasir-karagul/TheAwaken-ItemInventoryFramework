@@ -96,4 +96,6 @@ protected:
     FS_InventoryResult consumeReserved(FName itemId, const FGuid& instanceId, int32 quantity);
     // Server only. Used for gear returning to a bag record; ignores limits, still refuses duplicates.
     FS_InventoryResult addInstanceForced(const FS_InventoryEntry& instanceEntry);
+    // Spoilage (Section 8). Server only. Moves the whole stack to another itemId, ignoring that item's limit.
+    FS_SpoilResult convertStack(FName fromItemId, FName toItemId);
 };
