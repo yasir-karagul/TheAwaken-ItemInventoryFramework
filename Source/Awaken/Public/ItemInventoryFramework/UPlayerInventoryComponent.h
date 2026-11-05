@@ -36,4 +36,18 @@ protected:
 
     // Server. Creates, initializes and registers the Personal Inventory as an owner-only subobject.
     void createPersonalInventory();
+
+protected:
+    UFUNCTION()
+    void handlePersonalInventoryChanged(const FGuid& inventoryId);
+
+    // Server. Re-binds the change handler; call whenever personalInventory is created or replaced.
+    void bindPersonalInventory();
+
+public:
+    // Server. Asks the pawn's held item to re-check itself.
+    void revalidateHeldItem() const;
+```
+
+
 };
