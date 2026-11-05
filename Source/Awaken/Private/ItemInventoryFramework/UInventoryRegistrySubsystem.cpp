@@ -81,3 +81,49 @@ int32 UInventoryRegistrySubsystem::getViewerCount(const FGuid& containerId) cons
     const TArray<TWeakObjectPtr<UContainerViewComponent>>* list = viewers.Find(containerId);
     return list != nullptr ? list->Num() : 0;
 }
+
+
+FName UInventoryRegistrySubsystem::getSaveKey_Implementation(){
+    return TEXT("Inventory.World");
+}
+
+E_SaveScope UInventoryRegistrySubsystem::getSaveScope_Implementation(){
+    return E_SaveScope::World;
+}
+
+int32 UInventoryRegistrySubsystem::getSnapshotVersion_Implementation(){
+    return UBFL_InventorySave::currentSnapshotVersion;
+}
+
+TArray<uint8> UInventoryRegistrySubsystem::getSnapshotForSave_Implementation(){
+    FS_WorldInventorySave record;
+    record.version = UBFL_InventorySave::currentSnapshotVersion;
+    for(const TPair<FGuid, TObjectPtr<UInventoryData>>& pair : inventories){
+        UInventoryData* inventory = pair.Value;
+        if(inventory == nullptr){
+            continue;
+        }
+        const bool isPlacedContainer = inventory->getType() == E_InventoryType::Container;
+        const bool isDeathBagInventory = inventory->isDeathBag();
+        // Personal inventories belong to the Character file; Portable Containers are saved with their holder.
+        if(isPlacedContainer || isDeathBagInventory){
+            record.inventories.Add(UBFL_InventorySave::captureBundle(inventory, false));   // World file: ABSOLUTE time (D3)
+        }
+    }
+    return UBFL_InventorySave::toBytes(FS_WorldInventorySave::StaticStruct(), &record);
+}
+
+bool UInventoryRegistrySubsystem::restoreFromSnapshot_Implementation(const TArray<uint8>& snapshot){
+    FS_WorldInventorySave record;
+    if(!UBFL_InventorySave::fromBytes(FS_WorldInventorySave::StaticStruct(), &record, snapshot) || !UBFL_InventorySave::migrateWorldSave(record)){
+        return false;
+    }
+    for(const FS_InventorySaveBundle& bundle : record.inventories){
+        if(bundle.records.Num() == 0){
+            continue;
+        }
+        UInventoryData* inventory = createInventory(bundle.records[0].type, bundle.records[0].inventoryId);
+        UBFL_InventorySave::applyBundle(inventory, bundle, false);
+    }
+    return true;
+}
