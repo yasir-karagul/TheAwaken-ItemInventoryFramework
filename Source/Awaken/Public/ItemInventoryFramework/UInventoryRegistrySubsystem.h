@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Subsystems/WorldSubsystem.h"
-#include "ItemInventoryFramework/00Enums/E_ItemInventoryFramework.h"
+#include "ItemInventoryFramework/00Enums/E_ItemInventoryFramework.h"\n#include "ItemInventoryFramework/03Interfaces/BPI_SaveParticipantStub.h"
 #include "UInventoryRegistrySubsystem.generated.h"
 
 class UInventoryData;
@@ -10,7 +10,7 @@ class UContainerInventoryComponent;
 class UContainerViewComponent;
 
 UCLASS()
-class AWAKEN_API UInventoryRegistrySubsystem : public UWorldSubsystem{
+class AWAKEN_API UInventoryRegistrySubsystem : public UWorldSubsystem, public IBPI_SaveParticipant{
     GENERATED_BODY()
 
 public:
@@ -40,4 +40,11 @@ private:
     UPROPERTY() TMap<FGuid, TObjectPtr<UInventoryData>> inventories;
     TMap<FGuid, TWeakObjectPtr<UContainerInventoryComponent>> containerComponents;
     TMap<FGuid, TArray<TWeakObjectPtr<UContainerViewComponent>>> viewers;
+
+
+    virtual FName getSaveKey_Implementation() override;
+    virtual E_SaveScope getSaveScope_Implementation() override;
+    virtual int32 getSnapshotVersion_Implementation() override;
+    virtual TArray<uint8> getSnapshotForSave_Implementation() override;
+    virtual bool restoreFromSnapshot_Implementation(const TArray<uint8>& snapshot) override;
 };
