@@ -415,3 +415,47 @@ FS_InventoryResult UInventoryData::replaceEntries(const TArray<FS_InventoryEntry
     notifyChanged();
     return accept(newEntries.Num());
 }
+
+
+FS_InventoryResult UInventoryData::adjustReserved(FName itemId, const FGuid& instanceId, int32 delta){
+    if(!isServerSide()){
+        return refuse(T_Inventory_FailReason_NotServer);
+    }
+    const int32 index = instanceId.IsValid() ? findInstanceIndex(instanceId) : findStackableIndex(itemId);
+    if(index == INDEX_NONE){
+        return refuse(T_Inventory_FailReason_NotFound);
+    }
+    FS_InventoryEntry& entry = entries.items[index];
+    const int32 newReserved = entry.reservedQuantity + delta;
+    if(newReserved < 0 || newReserved > entry.totalQuantity){
+        return refuse(delta > 0 ? T_Inventory_FailReason_InsufficientQuantity : T_Inventory_FailReason_InvalidQuantity);
+    }
+    entry.reservedQuantity = newReserved;
+    entries.MarkItemDirty(entry);
+    notifyChanged();
+    return accept(FMath::Abs(delta));
+}
+
+FS_InventoryResult UInventoryData::consumeReserved(FName itemId, const FGuid& instanceId, int32 quantity){
+    if(!isServerSide()){
+        return refuse(T_Inventory_FailReason_NotServer);
+    }
+    const int32 index = instanceId.IsValid() ? findInstanceIndex(instanceId) : findStackableIndex(itemId);
+    if(index == INDEX_NONE){
+        return refuse(T_Inventory_FailReason_NotFound);
+    }
+    FS_InventoryEntry& entry = entries.items[index];
+    if(quantity <= 0 || quantity > entry.reservedQuantity){
+        return refuse(T_Inventory_FailReason_InsufficientQuantity);
+    }
+    entry.reservedQuantity -= quantity;
+    entry.totalQuantity -= quantity;
+    if(entry.totalQuantity <= 0){
+        entries.items.RemoveAt(index);
+        entries.MarkArrayDirty();
+    }else{
+        entries.MarkItemDirty(entry);
+    }
+    notifyChanged();
+    return accept(quantity);
+}
