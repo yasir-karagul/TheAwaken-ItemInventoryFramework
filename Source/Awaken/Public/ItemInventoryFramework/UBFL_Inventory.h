@@ -49,6 +49,4 @@ private:
     static FS_HeldItemView getHeldItem(const APlayerState* player);
     static const UDA_ItemDefinition* getHeldDefinition(const APlayerState* player);
     static bool isInstanceHeld(const APlayerState* player, const FGuid& instanceId);
-    // Section 8
-    FS_SpoilResult convertStack(FName fromItemId, FName toItemId);
 };
